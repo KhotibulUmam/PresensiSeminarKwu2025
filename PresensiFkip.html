@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Data dari Google Sheet</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 10px; }
+    table { border-collapse: collapse; width: 100%; font-size: 12px; }
+    th, td { border: 1px solid #ccc; padding: 2px; text-align: left; }
+    th { background-color: #f9f9f9; padding: 10px; }
+    img.signature { max-height: 40px; width: auto; display: block; }
+    .header-text {
+      text-align: center;
+      /* margin-bottom: 5px; beri jarak bawah agar tidak mepet ke tabel */
+    }
+
+  @media print {
+    @page {
+      margin: 10mm;
+    }
+    body {
+      margin: 0;
+    }
+    h2 {
+      margin-top: 0;
+    }
+  }
+  </style>
+</head>
+<body>
+  <div class="header-text">
+    <p><strong>Daftar Hadir Seminar Mata Kuliah Umum Kewirausanaan</strong></p>
+    <p><strong>Fakultas Keguruan dan Ilmu Pendidikan Tahun 2025</strong></p>
+  </div>
+  <div id="table-container">Memuat data...</div>
+
+  <script>
+    const sheetURL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR2iH6wM30c79uSI7W2n1CPNRPoprIKEDt_UdKB2dEH2MISw3ixQVvJHQhYN-wllFz6yfBqUe35w9lH/pub?gid=0&single=true&output=csv';
+
+    fetch(sheetURL)
+      .then(res => res.text())
+      .then(csv => {
+        const rows = csv.trim().split('\n').map(row => row.split(','));
+        const headers = rows[0];
+        
+        // Kolom yang tidak ingin ditampilkan
+        const hiddenColumns = ['submission id', 'respondent id', 'submitted at'];
+        
+        // Ambil index kolom yang ingin ditampilkan
+        const visibleIndexes = headers
+          .map((h, i) => ({ name: h.trim().toLowerCase(), index: i }))
+          .filter(col => !hiddenColumns.includes(col.name))
+          .map(col => col.index);
+
+        let html = '<table><thead><tr>';
+        html += '<th>NO</th>'; // Kolom nomor
+        visibleIndexes.forEach(i => html += `<th>${headers[i]}</th>`);
+        html += '</tr></thead><tbody>';
+
+        for (let i = 1; i < rows.length; i++) {
+          html += `<tr><td>${i}.</td>`; // Nomor urut
+          visibleIndexes.forEach(j => {
+            const header = headers[j].toLowerCase();
+            const cell = rows[i][j];
+            if (header.includes("tanda tangan") && cell?.startsWith("http")) {
+              html += `<td><img class="signature" src="${cell}" alt="Tanda Tangan"></td>`;
+            } else {
+              html += `<td>${cell || ''}</td>`;
+            }
+          });
+          html += '</tr>';
+        }
+
+        html += '</tbody></table>';
+        document.getElementById('table-container').innerHTML = html;
+      })
+      .catch(err => {
+        document.getElementById('table-container').innerText = 'Gagal memuat data.';
+        console.error(err);
+      });
+  </script>
+</body>
+</html>
