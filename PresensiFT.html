@@ -11,32 +11,31 @@
       max-height: 25px;
       width: auto;
       display: block;
-      margin: 0;      /* Tambahkan ini */
-      padding: 0;     /* Tambahkan ini */
-      border: none;   /* Tambahkan ini */
+      margin: 0;
+      padding: 0;
+      border: none;
     }
     .header-text {
       text-align: center;
-      /* margin-bottom: 5px; beri jarak bawah agar tidak mepet ke tabel */
     }
 
-  @media print {
-    @page {
-      margin: 10mm;
+    @media print {
+      @page {
+        margin: 10mm;
+      }
+      body {
+        margin: 0;
+      }
+      h2 {
+        margin-top: 0;
+      }
     }
-    body {
-      margin: 0;
-    }
-    h2 {
-      margin-top: 0;
-    }
-  }
   </style>
 </head>
 <body>
   <div class="header-text">
     <p><strong>Daftar Hadir Seminar Mata Kuliah Umum Kewirausanaan</strong></p>
-    <p><strong>Fakultas Teknik Tahun 2025</strong></p>
+    <p><strong>Fakultas Teknik 2025</strong></p>
   </div>
   <div id="table-container">Memuat data...</div>
 
@@ -47,28 +46,29 @@
       .then(res => res.text())
       .then(csv => {
         const rows = csv.trim().split('\n').map(row => row.split(','));
-        const headers = rows[0];
-        
-        // Kolom yang tidak ingin ditampilkan
-        const hiddenColumns = ['submission id', 'respondent id', 'submitted at', 'mata kuliah'];
-        
-        // Ambil index kolom yang ingin ditampilkan
-        const visibleIndexes = headers
-          .map((h, i) => ({ name: h.trim().toLowerCase(), index: i }))
-          .filter(col => !hiddenColumns.includes(col.name))
-          .map(col => col.index);
+        const headers = rows[0].map(h => h.trim().toLowerCase());
+
+        // Kolom yang ingin ditampilkan dan urutannya
+        const orderedColumns = ['npm', 'nama', 'program studi', 'tanda tangan'];
+        const visibleIndexes = orderedColumns
+          .map(name => ({ name, index: headers.indexOf(name) }))
+          .filter(col => col.index !== -1); // pastikan kolom ditemukan
 
         let html = '<table><thead><tr>';
         html += '<th>NO</th>'; // Kolom nomor
-        visibleIndexes.forEach(i => html += `<th>${headers[i]}</th>`);
+        visibleIndexes.forEach(col => {
+          const headerLabel = col.name.split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+          html += `<th>${headerLabel}</th>`;
+        });
         html += '</tr></thead><tbody>';
 
         for (let i = 1; i < rows.length; i++) {
           html += `<tr><td>${i}.</td>`; // Nomor urut
-          visibleIndexes.forEach(j => {
-            const header = headers[j].toLowerCase();
-            const cell = rows[i][j];
-            if (header.includes("tanda tangan") && cell?.startsWith("http")) {
+          visibleIndexes.forEach(({ name, index }) => {
+            const cell = rows[i][index];
+            if (name.includes("tanda tangan") && cell?.startsWith("http")) {
               html += `<td><img class="signature" src="${cell}" alt="Tanda Tangan"></td>`;
             } else {
               html += `<td>${cell || ''}</td>`;
